@@ -24,7 +24,7 @@ No repositório local, é preciso criar um arquivo com as variáveis que são se
 
 Nome: `terraform.tfvars`.
 
-``` json
+``` hcl
 user = {
     username = "user"
     password = "pass"
