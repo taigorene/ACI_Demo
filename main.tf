@@ -1,6 +1,6 @@
 # Tenant - https://registry.terraform.io/providers/CiscoDevNet/aci/latest/docs/resources/tenant
 resource "aci_tenant" "terraform_tenant" {
-    name        = "VitaIT_TF"
+    name        = "App_VitaIT_TF"
     description = "This tenant is created by Vita using terraform"
 }
 
@@ -53,7 +53,7 @@ resource "aci_bridge_domain" "bd_principal" {
 resource "aci_subnet" "subnet_principal" {
     parent_dn        = aci_bridge_domain.bd_principal.id
     description      = "vita_subnet"
-    ip               = "10.10.2.1/24"
+    ip               = "10.10.3.1/24"
     # Daqui pra baixo, opcional
     annotation       = "tag_subnet"
     ctrl             = ["querier", "nd"]
@@ -92,6 +92,11 @@ resource "aci_application_epg" "db_epg" {
     pref_gr_memb                  = "exclude"
     prio                              = "unspecified"
     shutdown                      = "no"
+    relation_fv_rs_bd      = aci_bridge_domain.bd_principal.id 
+	  relation_fv_rs_cons    = [ aci_contract.vitaapp_contract.id ]
+    depends_on = [
+      aci_contract.vitaapp_contract
+    ]
 }
 
 resource "aci_application_epg" "app_epg" {
@@ -111,6 +116,11 @@ resource "aci_application_epg" "app_epg" {
     pref_gr_memb                  = "exclude"
     prio                              = "unspecified"
     shutdown                      = "no"
+    relation_fv_rs_bd      = aci_bridge_domain.bd_principal.id 
+	  relation_fv_rs_cons    = [ aci_contract.vitaapp_contract.id ]
+    depends_on = [
+      aci_contract.vitaapp_contract
+    ]
 }
 
 
@@ -174,4 +184,38 @@ resource "aci_epg_to_contract" "contract_l3out" {
   annotation         = "terraform"
   match_t            = "AtleastOne"
   prio               = "unspecified"
+}
+
+# Filter -
+resource "aci_filter" "allow_https" {
+	tenant_dn = aci_tenant.terraform_tenant.id
+	name      = "allow_https"
+}
+resource "aci_filter" "allow_icmp" {
+	tenant_dn = aci_tenant.terraform_tenant.id
+	name      = "allow_icmp"
+}
+
+resource "aci_filter_entry" "https" {
+	name        = "https"
+	filter_dn   = aci_filter.allow_https.id
+	ether_t     = "ip"
+	prot        = "tcp"
+	d_from_port = "https"
+	d_to_port   = "https"
+	stateful    = "yes"
+}
+
+	resource "aci_filter_entry" "icmp" {
+	name        = "icmp"
+	filter_dn   = aci_filter.allow_icmp.id
+	ether_t     = "ip"
+	prot        = "icmp"
+	stateful    = "yes"
+}
+
+resource "aci_contract_subject" "Web_subject1" {
+	contract_dn                  = aci_contract.vitaapp_contract.id
+	name                         = "Subject"
+	relation_vz_rs_subj_filt_att = [aci_filter.allow_https.id, aci_filter.allow_icmp.id]
 }
