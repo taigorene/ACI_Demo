@@ -53,7 +53,7 @@ resource "aci_bridge_domain" "bd_principal" {
 resource "aci_subnet" "subnet_principal" {
     parent_dn        = aci_bridge_domain.bd_principal.id
     description      = "vita_subnet"
-    ip               = "10.10.3.1/24"
+    ip               = "10.10.2.1/24"
     # Daqui pra baixo, opcional
     annotation       = "tag_subnet"
     ctrl             = ["querier", "nd"]
